@@ -1,1 +1,1 @@
-{ "version": 2, "builds": [ { "src": "package.json", "use": "@vercel/remix" } ], "routes": [ { "src": "/(.*)", "dest": "/public/$1" } ] }
+{ "version": 2 }
