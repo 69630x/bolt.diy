@@ -200,7 +200,8 @@ jobs:
     needs: [test-basic-setup]  # Only if build passes
     if: |
       (github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'deploy-only') &&
-      github.ref_name == 'workflow-testing'  # Safe branch only
+      github.ref_name == 'workflow-testing'
+    # Safe branch only (moved comment here)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -290,4 +291,4 @@ jobs:
           echo "1. Review any failures above"
           echo "2. Fix issues in workflow configurations"
           echo "3. Re-test until all checks pass"
-          echo "4. Create PR to merge workflow improvements"
+          echo "4. Create PR to merge workflow improvements" 
