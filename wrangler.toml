@@ -1,7 +1,7 @@
-#:schema node_modules/wrangler/config-schema.json
+# schema = "node_modules/wrangler/config-schema.json"  # Keep if validating
 name = "oxbolt"
 compatibility_flags = ["nodejs_compat"]
-compatibility_date = "2025-03-28"
+compatibility_date = "2025-10-07"
 pages_build_output_dir = "./build/client"
 send_metrics = false
 account_id = "966b6dc70e734ed5164e955258e7b225"
