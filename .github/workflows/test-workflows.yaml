@@ -18,6 +18,7 @@ on:
         - ci-only
         - security-only
         - quality-only
+        - deploy-only  # New: For testing full deploy pipeline
 
 jobs:
   workflow-test-info:
@@ -192,10 +193,49 @@ jobs:
           docker build --target bolt-ai-production . --no-cache --progress=plain
           echo "✅ Docker build test completed"
 
+  # NEW: Test Cloudflare Pages Deploy (runs after build succeeds)
+  test-cloudflare-deploy:
+    name: Test Cloudflare Pages Deploy
+    runs-on: ubuntu-latest
+    needs: [test-basic-setup]  # Only if build passes
+    if: |
+      (github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'deploy-only') &&
+      github.ref_name == 'workflow-testing'  # Safe branch only
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.0'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '9.14.4'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm run build
+
+      - name: Deploy to Cloudflare Pages (Preview)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "🚀 Testing deploy to oxbolt (preview mode)..."
+          npx wrangler@latest pages deploy build/client \
+            --project-name=oxbolt \
+            --branch=preview-${{ github.run_number }}  # Unique preview branch
+          echo "✅ Deploy successful! Check preview URL in Wrangler output."
+
   test-results-summary:
     name: Test Results Summary
     runs-on: ubuntu-latest
-    needs: [workflow-test-info, test-basic-setup, test-linting, test-caching, test-security-tools, test-quality-checks, validate-docker-config]
+    needs: [workflow-test-info, test-basic-setup, test-linting, test-caching, test-security-tools, test-quality-checks, validate-docker-config, test-cloudflare-deploy]
     if: always()
     steps:
       - name: Check all test results
@@ -237,6 +277,12 @@ jobs:
             echo "✅ Docker Config: PASSED"
           else
             echo "❌ Docker Config: FAILED"
+          fi
+          
+          if [[ "${{ needs.test-cloudflare-deploy.result }}" == "success" ]]; then
+            echo "✅ Cloudflare Deploy: PASSED (preview URL available!)"
+          else
+            echo "❌ Cloudflare Deploy: FAILED - Check token/config"
           fi
           
           echo ""
